@@ -1,0 +1,19 @@
+10
+158000 568000 352000 415000 658000 112000 355000 458000 558000 668000
+
+
+
+My program will ignore this and anything under it.
+
+Distribution:
+
+6
+0 0.2 0 0.2 0.2 0.2 0.2 0 0 0
+0 0.2 0 0 0 0.6 0.2 0 0 0
+0 0 0.2 0 0 0.2 0 0 0.6 0
+1 0 0 0 0 0 0 0 0 0
+1 0 0 0 0 0 0 0 0 0
+1 0 0 0 0 0 0 0 0 0
+
+With simple hashing function: 154 operations
+With complex hashing function: 70 operations

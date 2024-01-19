@@ -1,0 +1,55 @@
+Hash Table = length 1009
+
+Gets number of digits
+Gets distribution of these digits
+
+Computes imperfection factor for each digit (see ImperfectionFactorExplanation for more details)
+Ranks the imperfection factors of the digits
+Find difference between imperfection factor of first 3 digits vs 3 best digits
+
+If significant difference:
+    Use complex hashing function (more info below)
+Else:
+    Use simple hashing function (more info below)
+
+while File Inputted is not Q:
+
+    Get name of file
+
+    for all numbers in file:
+
+        If using complex hashing function:
+
+            First hash = best 3 digits sorted out of number (ex: (best digits: 2, 4, 3); (input: 54862); (output: 468))
+            Increment number of operations by 7
+
+        Else:
+
+            First hash = number % size of hash table (1009)
+            Increment number of operations by 1
+
+        If Hash Table [First Hash] is empty:
+
+            Insert number
+        
+        Else:
+
+            Second hash = (number % 109) + 1
+            Increment number of operations by 2
+
+            while Hash table [Probing Function] is empty:
+
+                Probing Function = ( First hash + iterating * Second hash ) % size of hash table (1009)
+                Increment number of operations by 3
+        
+    while query is not -1:
+
+        Go back through the above insert protocol without inserting
+        
+        if hash table [searching] = query:
+
+            Output searching
+        
+        else if table [searching] is empty:
+
+            Output that file is not in table

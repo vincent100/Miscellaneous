@@ -1,0 +1,79 @@
+------------------------------------------------------------------------------------------------------------------------------
+
+Note on file input:
+
+The file is inputted as the path relative to the executable. 
+
+Because the the .cpp and .h files are found in different levels as
+the test files that I made, to test my program (assuming the official tests will be stored in the same file as my own tests) you
+must go up one level before going into the "/Test_Data/Tests" folder.
+
+Example of path to input into program (As far as I know, this is the same across all OS):
+
+    "./../Test_Data/Tests/test1.in"
+
+    (the . represents the executable file, and the .. represents going to the parent folder)
+
+(This path input is the same for the test generators)
+
+------------------------------------------------------------------------------------------------------------------------------
+
+The general input for this program:
+
+Standard input (cin, through terminal):
+    
+    Integer N 
+    N*10 decimals or fractions
+    File name(s)
+
+Through file (ifstream, in file):
+
+    Integer M
+    M integers with N digits
+
+Standard input (cin, through terminal):
+
+    Boolean
+    Integer(s) to search for (as many as wanted)
+
+
+------------------------------------------------------------------------------------------------------------------------------
+
+
+The input format for this program (in pseudocode): 
+
+On one line, an integer representing the number of digits. (through the standard input, cin)
+
+On the next N lines, 10 decimals or fractions representing the distribution for the Nth digit 
+(through the standard input, cin)
+(these can be separated by spaces, tabs, newlines, or a combination)
+
+There is then a loop prompting for a file name (through the standard input, cin):
+
+    If the file is called Q, the loop ends
+
+    If the file is not valid or reachable, the loop resarts
+
+    Else:
+
+        On one line, an integer representing the number of numbers (in the file, through ifstream)
+
+        M integers of N digits (in the file, through ifstream)
+        (these can be separated by spaces, tabs, newlines, or a combination)
+
+        On one line, a boolean (0 or 1) representing whether or not to print the hash table (through the standard input, cin)
+
+        If the boolean is 0, the table is not printed
+        If the boolean is 1, the table is printed
+
+        There is then a loop prompting to search for a number in the hash table (throught the standard input, cin):
+
+            One integer representing the number to search for (through the standard input)
+
+            If the integer is -1, the loop ends
+
+            If the integer is invalid, the loop resarts
+
+            Else, it is search in the hash table
+
+------------------------------------------------------------------------------------------------------------------------------
