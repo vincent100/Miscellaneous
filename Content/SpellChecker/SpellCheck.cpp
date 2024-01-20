@@ -21,23 +21,34 @@ const int maxVal32 = (1 << 30);
 
 // DP recurrence to find how many edits turns word1 -> word2
 int findLeastDif (std::string word1, std::string word2){
-    std::vector<std::vector<int>> dp (word1.size(), std::vector<int> (word2.size(), maxVal32 )); // dp[word1][word2]
+    int longer = std::max(word1.size(), word2.size());
+    std::vector<std::vector<int>> dp (longer, std::vector<int> (longer, maxVal32 )); // dp[word1][word2]
+
+    for (int i = word1.size(); i < longer; i++){
+        word1 += ' ';
+    }
+    for (int i = word2.size(); i < longer; i++){
+        word2 += ' ';
+    }
 
     if (word1[0] == word2[0]) dp[0][0] = 0;
     else dp[0][0] = 1;
 
-    for (int i = 1; i < word1.size(); i++){
+    for (int i = 1; i < longer; i++){
         dp[i][0] = dp[i-1][0] + 1;
     }
 
-    for (int i = 1; i < word2.size(); i++){
+    for (int i = 1; i < longer; i++){
         dp[0][i] = dp[0][i-1] + 1;
     }
 
-    for (int i = 1; i < word1.size(); i++){
-        for (int d = 1; d < word2.size(); d++){
+    for (int i = 1; i < longer; i++){
+        for (int d = 1; d < longer; d++){
             dp[i][d] = std::min(dp[i-1][d], std::min(dp[i][d-1], dp[i-1][d-1]) ); // dp recurence
+
             if (word1[i] != word2[d]) dp[i][d]++;
+
+            if (word1[i-1] == word2[d] && word1[i] == word2[d-1]) dp[i][d] = std::min(dp[i][d], dp[i-1][d-1]); // flip
         }
     }
 
