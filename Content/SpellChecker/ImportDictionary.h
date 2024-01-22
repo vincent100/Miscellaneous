@@ -4,6 +4,35 @@
 #include <vector>
 #include <string>
 
+extern const std::vector<int> fingers = {
+   0, // a
+   3, // b
+   2, // c
+   2, // d
+   2, // e
+   3, // f
+   3, // g
+   4, // h
+   5, // i
+   4, // j
+   5, // k
+   6, // l
+   4, // m
+   4, // n
+   6, // o
+   7, // p
+   0, // q
+   3, // r
+   1, // s
+   3, // t
+   4, // u
+   3, // v
+   1, // w
+   1, // x
+   4, // y
+   0, // z
+};
+
 extern const std::vector<std::vector<std::string>> dictionary = 
 { 
     {

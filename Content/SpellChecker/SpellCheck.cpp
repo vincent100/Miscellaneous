@@ -1,8 +1,8 @@
 /**
-This is my attempt at building a spell checker (not using AI, deterministic)
-I tried to used DP to improve on the obvious recursive 
+This is my attempt at building a deterministic spell checker
+I tried to used DP to improve on the obvious recursive
 answer.
-This file takes a long time to compile because of the 
+This file takes a long time to compile because of the
 dictionary. (10k words)
 For convenience, compiled .exe file is included (compileing
 is rather slow, but execution is fast)
@@ -19,64 +19,71 @@ Vincent Bucourt
 
 const int maxVal32 = (1 << 30);
 
+struct Match{
+    std::string word;
+    double val;
+};
+
+Match bestMatch;
+
 // DP recurrence to find how many edits turns word1 -> word2
-int findLeastDif (std::string word1, std::string word2){
-    int longer = std::max(word1.size(), word2.size());
-    std::vector<std::vector<int>> dp (longer, std::vector<int> (longer, maxVal32 )); // dp[word1][word2]
+double findLeastDif (std::string from, std::string to){
 
-    for (int i = word1.size(); i < longer; i++){
-        word1 += ' ';
-    }
-    for (int i = word2.size(); i < longer; i++){
-        word2 += ' ';
-    }
+    std::vector<std::vector<double>> dp (from.size(), std::vector<double> (to.size(), maxVal32 )); // dp[from][to]
 
-    if (word1[0] == word2[0]) dp[0][0] = 0;
+    // Both words are made same length
+
+    if (from[0] == to[0]) dp[0][0] = 0;
+    else if (fingers[from[0] - 'a'] == fingers[to[0] - 'a']) dp[0][0] = 0.5;
     else dp[0][0] = 1;
 
-    for (int i = 1; i < longer; i++){
+    for (int i = 1; i < from.size(); i++){
         dp[i][0] = dp[i-1][0] + 1;
     }
 
-    for (int i = 1; i < longer; i++){
+    for (int i = 1; i < to.size(); i++){
         dp[0][i] = dp[0][i-1] + 1;
     }
 
-    for (int i = 1; i < longer; i++){
-        for (int d = 1; d < longer; d++){
-            dp[i][d] = std::min(dp[i-1][d], std::min(dp[i][d-1], dp[i-1][d-1]) ); // dp recurence
+    for (int i = 1; i < from.size(); i++){
+        for (int d = 1; d < to.size(); d++){
 
-            if (word1[i] != word2[d]) dp[i][d]++;
+            dp[i][d] = std::min(dp[i][d], dp[i-1][d] + 0.75);
+            dp[i][d] = std::min(dp[i][d], dp[i][d-1] + 0.75);
 
-            if (word1[i-1] == word2[d] && word1[i] == word2[d-1]) dp[i][d] = std::min(dp[i][d], dp[i-1][d-1]); // flip
+            if (from[i] == to[d]){
+                dp[i][d] = std::min(dp[i][d], dp[i-1][d-1]);
+            }
+            else if (from[i-1] == to[d] && from[i] == to[d-1]){
+                dp[i][d] = std::min(dp[i][d], dp[i-1][d-1] - 0.5);
+            }
+            else{
+                dp[i][d] = std::min(dp[i][d], dp[i-1][d-1] + 1);
+            }
         }
     }
 
-    return dp[word1.size()-1][word2.size()-1];
+    return dp[from.size()-1][to.size()-1]; // last square is when they will both be equal
 }
 
 // Tests all "reasonable" matching words (+- 3 length)
-std::stack<std::pair<int, std::string>> spellCheck(std::string word){
-    std::stack<std::pair<int, std::string>> match;
-    int difOn;
-    int whereAdd;
-    bool toAdd;
+void spellCheck(std::string word){
+    double difOn;
 
-    for (int i = std::max(0, (int) word.size() - 3); i <= word.size() + 3; i++){ // offset (-3 to 3)
+
+    for (int i = std::max(0, (int) word.size() - 3); i <= std::min(22, (int) word.size() + 1); i++){ // offset (-2 to +2)
 
         for (std::string s : dictionary[i]){ // For all words of length i
 
-            toAdd = false;
             difOn = findLeastDif(word, s);
-            if (difOn == 1){ // great match
-                match.push(std::make_pair(difOn, s));
+            if (difOn < bestMatch.val){
+                bestMatch.val = difOn;
+                bestMatch.word = s;
             }
 
         }
 
     }
-
-    return match;
 
 }
 
@@ -94,16 +101,13 @@ signed main(){
         std::cout << "Word is already well spelled\n";
     }
     else{
-
         // Run checks on possible words
-        std::stack<std::pair<int, std::string>> returnVal = spellCheck(inp);
+        bestMatch.val = 9999.0;
+        spellCheck(inp);
 
         // Output
-        std::cout << "Good matches:\n";
 
-        while (!returnVal.empty()){
-            std::cout << returnVal.top().second << " (" << returnVal.top().first << " changes)\n";
-            returnVal.pop();
-        }
+        std::cout << "Best Match:   " << bestMatch.word << '\n';
+        
     }
 }
