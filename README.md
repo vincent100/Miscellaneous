@@ -8,4 +8,4 @@ This is a list of many miscellaneous projects I worked on. Some of these are bas
 1) Deterministic Spell Checker
 2) Custom Hashing Function
 3) Infection Simulator
-4) Fractal Creator
+4) Fractal (Most Ammount of Edges)
