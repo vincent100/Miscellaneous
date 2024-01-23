@@ -1,3 +1,8 @@
+# This is a project to simulate the spread of an infectious disease in a network (graph).
+# Some fields include: connections, infection rate (per connection), death rate, etc...
+
+# Vincent Bucourt
+
 import random
 
 numpeople = int(input("How many people?\n"))
@@ -36,7 +41,7 @@ numsimulationsnotdwindled = 0
 numdeath = 0
 mortalityperday = -100*(((-mortality)/100+1)**(1/days)-1)
 
-#Part of the code tofor uninfecting people
+# Part of the code tofor uninfecting people
 
 def uninfect():
     global numpeople, infectedlist, wheninfected
@@ -45,15 +50,15 @@ def uninfect():
             infectedlist[i] = 0
             wheninfected[i] = 0
 
-#Part of the code for infecting people
+# Part of the code for infecting people
 
 def infect():
     global numpeople, infectedlist, checkinfected, lastinfected, l, cooldown, infectedpercent, gridconnection, testpercent
     for i in range(numpeople):
 
-        #Part to check if somone will get infected
+        # Part to check if somone will get infected
 
-        if infectedlist[i] == 0 and (checkinfected[i] == False or lastinfected[i] == l-cooldown+1): #or (i == firstinfected-1 and i > infectedlen-1)):
+        if infectedlist[i] == 0 and (checkinfected[i] == False or lastinfected[i] == l-cooldown+1): # or (i == firstinfected-1 and i > infectedlen-1)):
             for d in range(numpeople):
                 if gridfull[i][d] == 1 and infectedlist[d] == 1:
                     infectedpercent[i] *= 1-gridconnection[i][d]/100
@@ -72,7 +77,7 @@ def infect():
             if checking < (mortalityperday/100):
                 infectedlist[i] = "Dead"
 
-#Prints what there is to print at the end of a day
+# Prints what there is to print at the end of a day
  
 def print_day():
     global numpeople, infectedlist
@@ -82,7 +87,7 @@ def print_day():
         toprint += " "
     print(toprint)
 
-#Defines the variables needed before every simulation
+# Defines the variables needed before every simulation
 
 def define_variables():
     global wheninfected, infectedlist, infectedpercent, infectedlist, lastinfected, checkinfected, wheninfectedday
@@ -98,7 +103,7 @@ def define_variables():
     wheninfectedday = [False]*numpeople
     wheninfectedday[infectedfirst-1] = -1
 
-#Checks the characteristics of a day
+# Checks the characteristics of a day
 
 def checks():
     global numsimulationsdwindled, numsimulationsnotdwindled, numdeath
@@ -109,7 +114,7 @@ def checks():
     if "Dead" in infectedlist:
         numdeath += 1
 
-#Main part of the program:
+# Main part of the program:
 
 for s in range(timessimulate):
     print(f"\nSimulation {s+1}: \n")
