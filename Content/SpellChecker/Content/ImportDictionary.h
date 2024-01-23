@@ -1,3 +1,5 @@
+// Data needed for main file (SpellCheck.cpp)
+
 #ifndef dic
 #define dic
 

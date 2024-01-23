@@ -1,4 +1,5 @@
 /**
+
 This is my attempt at building a deterministic spell checker
 I tried to used DP to improve on the obvious recursive
 answer.
@@ -7,6 +8,7 @@ dictionary. (10k words)
 For convenience, compiled .exe file is included (compileing
 is rather slow, but execution is fast)
 Vincent Bucourt
+
 */
 
 #include <iostream>
