@@ -78,7 +78,7 @@ std::queue<std::string> getTokens(std::string in){
                 tokens.push(token);
             }
             
-            if (charDigit(last) && charLetter(c) && last != ' '){ // If implicit multiplication
+            if ((charDigit(last) && charLetter(c)) || (last == ')' && c == '(')){ // If implicit multiplication
                 tokens.push("*");
             }
             token = c;
@@ -131,11 +131,11 @@ std::queue<std::string> parse (std::queue<std::string> inp){
             }
             operators.pop();
         }
-        else if ((operators.empty()) || (priority[tokenOn] <= priority[operators.top()])){ // If higher order (in good order)
+        else if ((operators.empty()) || (priority[tokenOn] < priority[operators.top()])){ // If higher order (in good order)
             operators.push(tokenOn);
         }
         else{ // If lower order (in bad order)
-            while ((!operators.empty()) && (priority[tokenOn] > priority[operators.top()]) && (operators.top() != "(")){ // While bad
+            while ((!operators.empty()) && (priority[tokenOn] >= priority[operators.top()]) && (operators.top() != "(")){ // While bad
                 ordered.push(operators.top());
                 operators.pop();
             }
@@ -153,77 +153,118 @@ std::queue<std::string> parse (std::queue<std::string> inp){
     return ordered;
 }
 
-bool needMul (std::string token2){
-    bool allLet = true;
-    for (char c : token2){
-        if (charDigit(c)) allLet = false;
-    }
-    return !allLet;
+/**
+ * Returns if a (*) symbol is needed
+*/
+bool needMul (std::string token2){ // If you need a multiplication symbol
+    return (charDigit(token2[0]));
 }
 
+/**
+ * Returns if a token is an operator
+*/
+bool isOperator (std::string token){
+    return !(priority[token] == 0 || priority[token] == 1);
+}
+
+/**
+ * Turns sorted tokens into LaTex format
+*/
 std::string toTex (std::queue<std::string> inp){
     std::string tokenOn;
     std::pair<std::string, int> str1, str2, toAdd;
-    std::stack<std::pair<std::string, int>> prev;
+    std::stack<std::pair<std::string, int>> prev; // first is the token, second is the priority of last operation
+    bool firstElement = true;
 
     if (inp.front() == "") return "$$";
 
     while (!inp.empty()){
         tokenOn = inp.front();
-
+        toAdd.second = 0;
+        
         if (isToken(tokenOn)){ // If trig function
             toAdd.first = "\\" + tokenOn + "{(" + prev.top().first + ")}";
             prev.pop();
         }
         else if (charDigit(inp.front()[0]) || charLetter(tokenOn[0])){ // If on is not an operator
             toAdd.first = tokenOn;
+            toAdd.second = -1;
         }
         else if (tokenOn == "/"){ // If fraction
-
+            
             str2 = prev.top();
             prev.pop();
             str1 = prev.top();
             prev.pop();
-
+            
             toAdd.first = "\\dfrac{" + str1.first + "}{" + str2.first + "}";
         }
-        else if (tokenOn == "^" || tokenOn == "**"){
-
+        else if (tokenOn == "^" || tokenOn == "**"){ // If exponential
+            
             str2 = prev.top();
             prev.pop();
             str1 = prev.top();
             prev.pop();
-
+            
             toAdd.first = "(" + str1.first + ")^{" + str2.first + "}";
         }
-        else if (tokenOn == "*"){
-
+        else if (tokenOn == "*"){ // If multiplication
+            
             str2 = prev.top();
             prev.pop();
             str1 = prev.top();
             prev.pop();
-
-            if (priority[tokenOn] >= str1.second && priority[tokenOn] >= str2.second){
-                toAdd.first = str1.first + (needMul(str2.first) ? "*" : "") + str2.first;
+            
+            if (priority["*"] < str1.second){
+                str1.first = "(" + str1.first + ")";
+                str1.second = 1;
             }
-            else{
-                toAdd.first = "(" + str1.first + ")" + (needMul(str2.first) ? "*" : "") + "(" + str2.first + ")";
+            if (priority["*"] < str2.second){
+                str2.first = "(" + str2.first + ")";
+                str2.second = 1;
+            }
+            if (needMul(str2.first)){
+                str2.first = "\\cdot " + str2.first;
+            }
+            
+            toAdd.first = str1.first + str2.first;
+            
+        }
+        else if (tokenOn == "-"){ // If (-)
+
+            if (firstElement || (!inp.empty() && isOperator(inp.front()) )){ // If unary (-)
+                str1 = prev.top();
+                prev.pop();
+
+                if (priority["*"] < str1.second){ // If lower priority before (-)   (ex: -(x + 1))
+                    str1.first = "(" + str1.first + ")";
+                }
+                toAdd.first = "-" + str1.first;
+            }
+            else{ // If substraction (-)
+                str2 = prev.top();
+                prev.pop();
+                str1 = prev.top();
+                prev.pop();
+
+                toAdd.first = str1.first + "-" + str2.first;
             }
         }
         else{ // If no special latex scripting
-
+            
             str2 = prev.top();
             prev.pop();
             str1 = prev.top();
             prev.pop();
-
+            
             toAdd.first = str1.first + tokenOn + str2.first;
         }
-
-        toAdd.second = priority[tokenOn];
-
+        
+        if (toAdd.second != -1) toAdd.second = priority[tokenOn];
+        
         prev.push(toAdd);
         inp.pop();
+        firstElement = false;
     }
 
     std::string ans = "$" + prev.top().first + "$";
@@ -242,3 +283,7 @@ signed main(){
     std::string finalAns = toTex(goodOrder);
     std::cout << "Your mathematical formula in LaTex script:\n" << finalAns << '\n';
 }
+
+
+
+
