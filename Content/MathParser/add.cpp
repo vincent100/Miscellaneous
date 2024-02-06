@@ -9,6 +9,24 @@
 #include <queue>
 #include <map>
 
+// Lower number is higher priority
+std::map<std::string, int> priority = {
+    {"(", 1},
+    {")", 1},
+    {"^", 2},
+    {"**", 2},
+    {"sqrt", 2},
+    {"sin", 3},
+    {"cos", 3},
+    {"tan", 3},
+    {"log", 3},
+    {"`", 4},
+    {"*", 5},
+    {"/", 5},
+    {"+", 6},
+    {"-", 6}
+};
+
 bool charDigit(char inp){
     return ('0' <= inp && inp <= '9');
 }
@@ -61,8 +79,10 @@ std::queue<std::string> getTokens(std::string in){
     }
 
     bool same;
+    char c;
     last = noSpace[0];
-    for (char c : noSpace){ // Splits input into tokens
+    for (int i = 0; i < noSpace.size(); i++){ // Splits input into tokens
+        c = noSpace[i];
 
         same = (charDigit(c) && charDigit(last)) || (charLetter(c) && charLetter(last));
 
@@ -70,18 +90,25 @@ std::queue<std::string> getTokens(std::string in){
             token += c;
         }
         else{ // If not same type
-
+            if (i == 0) token = c;
+            
             if (charLetter(token[0])){ // If letters
                 decompToken(token, tokens);
             }
-            else{ // If numbers
+            else{ // If numbers or operators
+
+                // If unary
+                if (token == "-" && (i == 0 || priority.find(tokens.front()) != priority.end())){ // If first operand of right before another operand
+                    token = "`";
+                }
                 tokens.push(token);
             }
             
             if ((charDigit(last) && charLetter(c)) || (last == ')' && c == '(')){ // If implicit multiplication
                 tokens.push("*");
             }
-            token = c;
+
+            if (i != 0) token = c;
         }
 
         last = c;
@@ -89,29 +116,18 @@ std::queue<std::string> getTokens(std::string in){
     if (charLetter(token[0])){ // If letters
         decompToken(token, tokens);
     }
-    else{ // If numbers
+    else if (token != " "){ // If numbers
         tokens.push(token);
     }
 
+    while (!tokens.empty()){
+        std::cout << tokens.front() << "\n";
+        tokens.pop();
+    }
+
+
     return tokens;
 }
-
-// Lower number is higher priority
-std::map<std::string, int> priority = {
-    {"(", 1},
-    {")", 1},
-    {"^", 2},
-    {"**", 2},
-    {"sqrt", 2},
-    {"sin", 3},
-    {"cos", 3},
-    {"tan", 3},
-    {"log", 3},
-    {"*", 4},
-    {"/", 4},
-    {"+", 5},
-    {"-", 5}
-};
 
 std::queue<std::string> parse (std::queue<std::string> inp){
     std::string tokenOn, nextToken;
@@ -208,6 +224,15 @@ std::string toTex (std::queue<std::string> inp){
             
             toAdd.first = "(" + str1.first + ")^{" + str2.first + "}";
         }
+        else if (tokenOn == "`"){ // If unary (-) (Chose ` objectively)
+            str1 = prev.top();
+            prev.pop();
+
+            if (priority["*"] < str1.second){ // If lower priority before (-)   (ex: -(x + 1))
+                str1.first = "(" + str1.first + ")";
+            }
+            toAdd.first = "-" + str1.first;
+        }
         else if (tokenOn == "*"){ // If multiplication
             
             str2 = prev.top();
@@ -230,25 +255,13 @@ std::string toTex (std::queue<std::string> inp){
             toAdd.first = str1.first + str2.first;
             
         }
-        else if (tokenOn == "-"){ // If (-)
-
-            if (firstElement || (!inp.empty() && isOperator(inp.front()) )){ // If unary (-)
-                str1 = prev.top();
-                prev.pop();
-
-                if (priority["*"] < str1.second){ // If lower priority before (-)   (ex: -(x + 1))
-                    str1.first = "(" + str1.first + ")";
-                }
-                toAdd.first = "-" + str1.first;
-            }
-            else{ // If substraction (-)
+        else if (tokenOn == "-"){ // If subtraction (-)
                 str2 = prev.top();
                 prev.pop();
                 str1 = prev.top();
                 prev.pop();
 
                 toAdd.first = str1.first + "-" + str2.first;
-            }
         }
         else{ // If no special latex scripting
             
@@ -278,12 +291,8 @@ signed main(){
 
     std::queue<std::string> tokens = getTokens(inp);
 
-    std::queue<std::string> goodOrder = parse (tokens);
+    // std::queue<std::string> goodOrder = parse (tokens);
 
-    std::string finalAns = toTex(goodOrder);
-    std::cout << "Your mathematical formula in LaTex script:\n" << finalAns << '\n';
+    // std::string finalAns = toTex(goodOrder);
+    // std::cout << "Your mathematical formula in LaTex script:\n" << finalAns << '\n';
 }
-
-
-
-
