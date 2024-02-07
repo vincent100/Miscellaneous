@@ -127,7 +127,7 @@ std::queue<std::string> getTokens(std::string in){
                 tokens.push(token);
             }
             
-            if ((charDigit(last) && charLetter(c)) || (last == ')' && c == '(') ){ // If implicit multiplication
+            if ((charDigit(last) && charLetter(c)) || (last == ')' && (!charOperator(c)) || c == '(') ){ // If implicit multiplication
                 tokens.push("*");
             }
             
@@ -141,6 +141,11 @@ std::queue<std::string> getTokens(std::string in){
     }
     else if (token != " "){ // If numbers
         tokens.push(token);
+    }
+
+    while (!tokens.empty()){
+        std::cout << tokens.front() << "\n";
+        tokens.pop();
     }
 
     return tokens;
@@ -311,8 +316,8 @@ signed main(){
 
     std::queue<std::string> tokens = getTokens(inp);
 
-    std::queue<std::string> goodOrder = parse (tokens);
+    // std::queue<std::string> goodOrder = parse (tokens);
 
-    std::string finalAns = toTex(goodOrder);
-    std::cout << "Your mathematical formula in LaTex script:\n" << finalAns << '\n';
+    // std::string finalAns = toTex(goodOrder);
+    // std::cout << "Your mathematical formula in LaTex script:\n" << finalAns << '\n';
 }
