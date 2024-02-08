@@ -4,19 +4,20 @@
 */
 
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <stack>
 #include <queue>
 #include <map>
 
-// Lower number is higher priority
-std::map<std::string, int> priority = {
+// Global Variables
+std::map<std::string, int> priority = { // Lower number is higher priority
     {"(", 1},
     {")", 1},
     {"^", 2},
     {"**", 2},
     {"sqrt", 2},
-    {"`", 3},
+    {"--", 3},
     {"sin", 4},
     {"cos", 4},
     {"tan", 4},
@@ -24,24 +25,77 @@ std::map<std::string, int> priority = {
     {"*", 5},
     {"/", 5},
     {"+", 6},
-    {"-", 6}
+    {"-", 6},
+    {"=", 7}
 };
 
+std::vector<std::string> functions = {"sin", "cos", "tan", "log", "sqrt", "Sigma"}; // Functions
+std::vector<std::string> constants = {"pi", "sigma"}; // Constants
+
+// Functions
+bool charDigit(char inp);
+bool charLetter(char inp);
+bool charOperator(char inp);
+
+bool isFunction (std::string inp);
+bool isConstant (std::string inp);
+
+bool constantToken (std::string inp, int& i, int lenCheck, std::queue<std::string>& tokens);
+bool constantFunction (std::string inp, int& i, int lenCheck, std::queue<std::string>& tokens);
+
+void decompToken (std::string inp, std::queue<std::string>& tokens);
+std::queue<std::string> getTokens(std::string in);
+
+std::queue<std::string> parse (std::queue<std::string> inp);
+
+std::string toTex (std::queue<std::string> inp);
+
+// Main
+signed main(){
+    std::string inp;
+    std::cout << "Enter mathematical formula:\n";
+    std::getline(std::cin, inp);
+
+    std::queue<std::string> tokens = getTokens(inp);
+    
+    std::queue<std::string> goodOrder = parse (tokens);
+    
+    try{
+        std::string finalAns = toTex(goodOrder);
+        std::cout << "\n\nYour mathematical formula in LaTeX script:\n" << finalAns << '\n';
+    }
+    catch (std::invalid_argument& e){ // If user types something invalid
+        std::cerr << "\n\nBad input:\n" << e.what() << "\n";
+        return -1;
+    }
+    
+    return 0;
+}
+
+/**
+ * If character is a digit
+ */
 bool charDigit(char inp){
     return ('0' <= inp && inp <= '9');
 }
 
+/**
+ * If character is a letter
+ */
 bool charLetter(char inp){
     return ('a' <= inp && inp <= 'z') || ('A' <= inp && inp <= 'Z');
 }
 
+/**
+ * If character is an operator
+ */
 bool charOperator(char inp){
     return (!charDigit(inp) && !charLetter(inp));
 }
 
-std::vector<std::string> functions = {"sin", "cos", "tan", "log", "sqrt"};
-std::vector<std::string> constants = {"pi"};
-
+/**
+ * If string is a function
+ */
 bool isFunction (std::string inp){
     for (std::string s : functions){
         if (s == inp) return true;
@@ -49,6 +103,9 @@ bool isFunction (std::string inp){
     return false;
 }
 
+/**
+ * If string is a constant
+ */
 bool isConstant (std::string inp){
     for (std::string s : constants){
         if (s == inp) return true;
@@ -56,30 +113,49 @@ bool isConstant (std::string inp){
     return false;
 }
 
-bool checkToken (std::string inp, int& i, int lenCheck, std::queue<std::string>& tokens){
-    if (i < inp.size() - lenCheck + 1 && isFunction(inp.substr(i, lenCheck))){
+/**
+ * Check if substring is a constant
+ */
+bool constantToken (std::string inp, int& i, int lenCheck, std::queue<std::string>& tokens){
+    if (i < inp.size() - lenCheck + 1 && isConstant(inp.substr(i, lenCheck))){
         tokens.push(inp.substr(i, lenCheck));
-        i += (lenCheck - 1);
-        return true;
-    }
-    else if (i < inp.size() - lenCheck + 1 && isConstant(inp.substr(i, lenCheck))){
-        tokens.push(inp.substr(i, lenCheck) + (i != inp.size() - 1 ? "*" : ""));
+        if (i + lenCheck != inp.size()){
+            tokens.push("*");
+        }
         i += (lenCheck - 1);
         return true;
     }
     return false;
 }
 
+/**
+ * Check if substring is a constantToken
+ */
+bool functionToken (std::string inp, int& i, int lenCheck, std::queue<std::string>& tokens){
+    if (i < inp.size() - lenCheck + 1 && isFunction(inp.substr(i, lenCheck))){
+        tokens.push(inp.substr(i, lenCheck));
+        i += (lenCheck - 1);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Decomposes string of letters into parts
+ */
 void decompToken (std::string inp, std::queue<std::string>& tokens){
     std::string posToken, on;
 
     for (int i = 0; i < inp.size(); i++){
         
         bool works = false;
-        for (int len = 1; len < 5; len++){
+        for (int len = 1; len < 6; len++){
 
-            works = checkToken (inp, i, len, tokens);
-            if (works) break;
+            works = constantToken (inp, i, len, tokens) || functionToken (inp, i, len, tokens);
+            
+            if (works){ // If valid emplacement
+                break;
+            }
         }
         if (!works){
             on = inp[i];
@@ -89,6 +165,9 @@ void decompToken (std::string inp, std::queue<std::string>& tokens){
     }
 }
 
+/**
+ * Decomposes string into tokens
+ */
 std::queue<std::string> getTokens(std::string in){
     char last;
     std::string token = "", noSpace = "";
@@ -113,22 +192,26 @@ std::queue<std::string> getTokens(std::string in){
         }
         else{ // If not same type
 
-            if (charLetter(token[0])){ // If letters
+            if (charLetter(token[0])) // If letters
+            {
                 decompToken(token, tokens);
             }
             else{ // If numbers or operators
 
-                // If first operand of right before another operand
-                bool isUnary = token == "-" && (tokens.empty() || ( priority.find(tokens.back()) != priority.end() && tokens.back() != ")" ));
-                if (isUnary){ 
-                    token = "`";
+                // If first operand or right before another operand
+                if (token == "-" && (tokens.empty() || ( priority.find(tokens.back()) != priority.end() && tokens.back() != ")" )))
+                { 
+                    token = "--";
                 }
                 
                 tokens.push(token);
-            }
             
-            if ((charDigit(last) && charLetter(c)) || (last == ')' && (!charOperator(c) || c == '(')) ){ // If implicit multiplication
-                tokens.push("*");
+                // Change implicit multiplication
+                if ( (charLetter(last) || charDigit(last) || last == ')') && (charLetter(c) || charDigit(c) || c == '(') )
+                {
+                    tokens.push("*");
+                }
+                
             }
             
             token = c;
@@ -146,6 +229,9 @@ std::queue<std::string> getTokens(std::string in){
     return tokens;
 }
 
+/**
+ * Sorts tokens in machine readable order
+ */
 std::queue<std::string> parse (std::queue<std::string> inp){
     std::string tokenOn, nextToken;
     std::stack<std::string> operators;
@@ -164,10 +250,13 @@ std::queue<std::string> parse (std::queue<std::string> inp){
             }
             operators.pop();
         }
-        else if ((operators.empty()) || (priority[tokenOn] < priority[operators.top()])){ // If higher order (in good order)
+        // If (strictly higher priority than last operator) or (right asociative operator)
+        else if ( (operators.empty()) || (priority[tokenOn] < priority[operators.top()]) || (priority[tokenOn] == priority[operators.top()] && (tokenOn == "^" || tokenOn == "**" || isFunction(tokenOn)) ) )
+        {
             operators.push(tokenOn);
         }
-        else{ // If lower order (in bad order)
+        // If (lower or equal priority) (and left asociative)
+        else{
             while ((!operators.empty()) && (priority[tokenOn] >= priority[operators.top()]) && (operators.top() != "(")){ // While bad
                 ordered.push(operators.top());
                 operators.pop();
@@ -194,14 +283,7 @@ bool needMul (std::string token2){ // If you need a multiplication symbol
 }
 
 /**
- * Returns if a token is an operator
-*/
-bool isOperator (std::string token){
-    return !(priority[token] == 0 || priority[token] == 1);
-}
-
-/**
- * Turns sorted tokens into LaTex format
+ * Turns sorted tokens into LaTeX format
 */
 std::string toTex (std::queue<std::string> inp){
     std::string tokenOn;
@@ -209,7 +291,7 @@ std::string toTex (std::queue<std::string> inp){
     std::stack<std::pair<std::string, int>> prev; // first is the token, second is the priority of last operation
     bool firstElement = true;
 
-    if (inp.front() == "") return "$$";
+    if (inp.front() == "") throw std::invalid_argument ("Empty formula");
 
     while (!inp.empty()){
         tokenOn = inp.front();
@@ -219,6 +301,10 @@ std::string toTex (std::queue<std::string> inp){
             toAdd.first = "\\" + tokenOn + " ";
         }
         else if (isFunction(tokenOn)){ // If function
+        
+            if (prev.empty()){ // If syntax error
+                throw std::invalid_argument("No arguments for " + tokenOn + "()");
+            }
             toAdd.first = "\\" + tokenOn + "{(" + prev.top().first + ")}";
             prev.pop();
         }
@@ -227,6 +313,9 @@ std::string toTex (std::queue<std::string> inp){
             toAdd.second = -1;
         }
         else if (tokenOn == "/"){ // If fraction
+            if (prev.size() < 2){
+                throw std::invalid_argument("Too little arguments for (/)");
+            }
             
             str2 = prev.top();
             prev.pop();
@@ -236,24 +325,34 @@ std::string toTex (std::queue<std::string> inp){
             toAdd.first = "\\dfrac{" + str1.first + "}{" + str2.first + "}";
         }
         else if (tokenOn == "^" || tokenOn == "**"){ // If exponential
+            if (prev.size() < 2){
+                throw std::invalid_argument("Too little arguments for (^)");
+            }
             
             str2 = prev.top();
             prev.pop();
             str1 = prev.top();
             prev.pop();
             
-            toAdd.first = "(" + str1.first + ")^{" + str2.first + "}";
+            toAdd.first = (str1.second == -1 ? "" : "(") + str1.first + (str1.second == -1 ? "" : ")") + "^{" + str2.first + "}";
         }
-        else if (tokenOn == "`"){ // If unary (-) (Chose ` objectively)
+        else if (tokenOn == "--"){ // If unary (-) (Chose -- objectively)
+            if (prev.size() < 1){
+                throw std::invalid_argument("Too little arguments for (-)");
+            }
+            
             str1 = prev.top();
             prev.pop();
-
-            if (priority["`"] < str1.second){ // If lower priority before (-)   (ex: -(x + 1))
+            
+            if (priority["--"] < str1.second){ // If lower priority before (-)   (ex: -(x + 1))
                 str1.first = "(" + str1.first + ")";
             }
             toAdd.first = "-" + str1.first;
         }
         else if (tokenOn == "*"){ // If multiplication
+            if (prev.size() < 2){
+                throw std::invalid_argument("Too little arguments for (*)");
+            }
             
             str2 = prev.top();
             prev.pop();
@@ -275,15 +374,10 @@ std::string toTex (std::queue<std::string> inp){
             toAdd.first = str1.first + str2.first;
             
         }
-        else if (tokenOn == "-"){ // If subtraction (-)
-                str2 = prev.top();
-                prev.pop();
-                str1 = prev.top();
-                prev.pop();
-
-                toAdd.first = str1.first + "-" + str2.first;
-        }
-        else{ // If no special latex scripting
+        else{ // If no special LaTeX scripting
+            if (prev.size() < 2){
+                throw std::invalid_argument ("Too little arguments for (" + tokenOn + ")");
+            }
             
             str2 = prev.top();
             prev.pop();
@@ -302,17 +396,4 @@ std::string toTex (std::queue<std::string> inp){
 
     std::string ans = "$" + prev.top().first + "$";
     return ans;
-}
-
-signed main(){
-    std::string inp;
-    std::cout << "Enter mathematical formula:\n";
-    std::getline(std::cin, inp);
-
-    std::queue<std::string> tokens = getTokens(inp);
-
-    std::queue<std::string> goodOrder = parse (tokens);
-
-    std::string finalAns = toTex(goodOrder);
-    std::cout << "Your mathematical formula in LaTex script:\n" << finalAns << '\n';
 }
