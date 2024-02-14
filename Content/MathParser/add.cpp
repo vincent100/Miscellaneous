@@ -14,23 +14,28 @@
 std::map<std::string, int> priority = { // Lower number is higher priority
     {"(", 1},
     {")", 1},
+    {"|", 1},
+    {"(|", 1}, // Left abs sign
+    {"|)", 1}, // Right abs sign
     {"^", 2},
     {"**", 2},
     {"sqrt", 2},
-    {"--", 3},
     {"sin", 4},
     {"cos", 4},
     {"tan", 4},
     {"log", 4},
-    {"*", 5},
-    {"/", 5},
-    {"+", 6},
-    {"-", 6},
-    {"=", 7}
+    {"--", 5},
+    {"*", 6},
+    {"/", 6},
+    {"+", 7},
+    {"-", 7},
+    {"=", 8}
 };
 
 std::vector<std::string> functions = {"sin", "cos", "tan", "log", "sqrt", "Sigma"}; // Functions
 std::vector<std::string> constants = {"pi", "sigma"}; // Constants
+
+std::vector<bool> sideAbs; // Ignore if no (|), false if left (|), true if right (|)
 
 // Functions
 bool charDigit(char inp);
@@ -46,22 +51,31 @@ bool constantFunction (std::string inp, int& i, int lenCheck, std::queue<std::st
 void decompToken (std::string inp, std::queue<std::string>& tokens);
 std::queue<std::string> getTokens(std::string in);
 
-std::queue<std::string> parse (std::queue<std::string> inp);
+std::queue<std::string> machineSort (std::queue<std::string> inp);
 
 std::string toTex (std::queue<std::string> inp);
 
 // Main
 signed main(){
     std::string inp;
+    std::queue<std::string> tokens;
+    
     std::cout << "Enter mathematical formula:\n";
     std::getline(std::cin, inp);
-
-    std::queue<std::string> tokens = getTokens(inp);
+    sideAbs.resize (inp.size());
     
-    std::queue<std::string> goodOrder = parse (tokens);
+    tokens = getTokens(inp);
+    
+    // std::cout << "\n";
+    // while (!tokens.empty()){
+    //     std::cout << tokens.front() << "\n";
+    //     tokens.pop();
+    // }
+    
+    tokens = machineSort (tokens);
     
     try{
-        std::string finalAns = toTex(goodOrder);
+        std::string finalAns = toTex(tokens);
         std::cout << "\n\nYour mathematical formula in LaTeX script:\n" << finalAns << '\n';
     }
     catch (std::invalid_argument& e){ // If user types something invalid
@@ -117,6 +131,7 @@ bool isConstant (std::string inp){
  * Check if substring is a constant
  */
 bool constantToken (std::string inp, int& i, int lenCheck, std::queue<std::string>& tokens){
+    
     if (i < inp.size() - lenCheck + 1 && isConstant(inp.substr(i, lenCheck))){
         tokens.push(inp.substr(i, lenCheck));
         if (i + lenCheck != inp.size()){
@@ -150,13 +165,14 @@ void decompToken (std::string inp, std::queue<std::string>& tokens){
         
         bool works = false;
         for (int len = 1; len < 6; len++){
-
+            
             works = constantToken (inp, i, len, tokens) || functionToken (inp, i, len, tokens);
             
             if (works){ // If valid emplacement
                 break;
             }
         }
+        
         if (!works){
             on = inp[i];
             tokens.push(on);
@@ -180,59 +196,100 @@ std::queue<std::string> getTokens(std::string in){
     }
 
     bool same;
-    char c;
+    char on;
     last = noSpace[0];
-    for (int i = 0; i < noSpace.size(); i++){ // Splits input into tokens
-        c = noSpace[i];
-
-        same = (charDigit(c) && charDigit(last)) || (charLetter(c) && charLetter(last)) || (i == 0);
-
-        if (same){ // If same type
-            token += c;
+    
+    // Abs checks
+    bool lastAbsType = false; // False means right |, true means left |
+    bool insideAbs = false; // If something between (| |)
+    int depthAbs = 0; // Depth inside abs (| |)
+    
+    for (int i = 0; i <= noSpace.size(); i++){ // Splits input into tokens
+        
+        if (i < noSpace.size()){
+            on = noSpace[i];
         }
-        else{ // If not same type
+        else{
+            on = ' ';
+        }
+        
+        same = (charDigit(on) && charDigit(last)) || (charLetter(on) && charLetter(last)) || (i == 0);
+        
+        if (same){ // If same type (longer token)
+            token += on;
 
+            if (on == '|' && i == 0){
+                depthAbs++;
+                insideAbs = false;
+                lastAbsType = true;
+                sideAbs[0] = true;
+            }
+        }
+        
+        if (!same || i == noSpace.size()) { // If not same type
+            
             if (charLetter(token[0])) // If letters
             {
                 decompToken(token, tokens);
             }
             else{ // If numbers or operators
+                
+                // Abs checks
+                if (on == '|' && (depthAbs == 0 || !insideAbs))
+                { // If go one level deeper
+                    depthAbs++;
+                    insideAbs = false;
+                    lastAbsType = true;
+                }
+                else if (depthAbs > 0 && on != '|')
+                { // If inside | |
+                    insideAbs = true;
+                }
+                else if (insideAbs && on == '|')
+                { // If go one level less deep
+                    depthAbs--;
+                    insideAbs = false;
+                    lastAbsType = false;
+                }
 
+                if (on == '|') sideAbs[i] = lastAbsType;
+                
                 // If first operand or right before another operand
-                if (token == "-" && (tokens.empty() || ( priority.find(tokens.back()) != priority.end() && tokens.back() != ")" )))
-                { 
+                if (token == "-" && (tokens.empty() || ( priority.find(tokens.back()) != priority.end() && (tokens.back() != ")" || tokens.back() == "(") )))
+                {
                     token = "--";
                 }
                 
-                tokens.push(token);
-            
-                // Change implicit multiplication
-                if ( (charLetter(last) || charDigit(last) || last == ')') && (charLetter(c) || charDigit(c) || c == '(') )
+                if (token == "|"){
+                    tokens.push( (sideAbs[i-1] ? "(|" : "|)" ) );
+                }
+                else{
+                    tokens.push(token);
+                }
+
+                // If implicit multiplication
+                if ( (charLetter(last) || charDigit(last) || last == ')' || ( last == '|' && !sideAbs[i-1] )) && (charLetter(on) || charDigit(on) || on == '(' || ( on == '|' && sideAbs[i] )) )
                 {
+                    std::cout << last << " " << on << "\n";
+
                     tokens.push("*");
                 }
                 
             }
             
-            token = c;
+            token = on;
         }
-
-        last = c;
+        
+        last = on;
     }
-    if (charLetter(token[0])){ // If letters
-        decompToken(token, tokens);
-    }
-    else if (token != " "){ // If numbers
-        tokens.push(token);
-    }
-
+    
     return tokens;
 }
 
 /**
  * Sorts tokens in machine readable order
  */
-std::queue<std::string> parse (std::queue<std::string> inp){
+std::queue<std::string> machineSort (std::queue<std::string> inp){
     std::string tokenOn, nextToken;
     std::stack<std::string> operators;
     std::queue<std::string> ordered;
