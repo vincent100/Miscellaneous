@@ -1,6 +1,7 @@
 /**
- * Forms structure with the most edges (N iterations)
- * This stems from an interesting observation I made.
+ * Forms structure with many edges.
+ * General idea is useful for some points on IOI 2010 Maze 
+ * (https://oj.uz/problem/statistics/IOI10_maze)
  */
 
 #include <iostream>
