@@ -1,5 +1,6 @@
 # This is a project to simulate the spread of an infectious disease in a network (graph).
 # Some fields include: connections, infection rate (per connection), death rate, etc...
+# Started off deterministic, then some params were (impossible?) to figure out with stats
 
 # Vincent Bucourt
 
