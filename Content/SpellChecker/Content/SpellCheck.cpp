@@ -1,12 +1,17 @@
 /**
 
-This is my attempt at building a deterministic spell checker
-I tried to used DP to improve on the obvious recursive
-answer.
+This is a deterministic spell checker.
+
+Uses DP to get O(N²). Put each word on one axis. Going from one
+word to another is a path on a grid (specifics in the code)
+
 This file takes a long time to compile because of the
 dictionary. (10k words)
-For convenience, compiled .exe file is included (compileing
+For convenience, compiled .exe file is included (compiling
 is rather slow, but execution is fast)
+
+TODO: Use constexp to make dictionary, compilation would be fast(er)
+
 Vincent Bucourt
 
 */
