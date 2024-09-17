@@ -1,5 +1,5 @@
 /**
- * Forms structure with many edges.
+ * Forms structure with (most?) edges possible
  * General idea is useful for some points on IOI 2010 Maze 
  * (https://oj.uz/problem/statistics/IOI10_maze)
  */
